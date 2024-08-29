@@ -1,0 +1,12 @@
+.idea
+.DS_Store
+.vscode
+
+
+
+environment.yml
+environment.yaml
+
+temp.go
+
+*.log
