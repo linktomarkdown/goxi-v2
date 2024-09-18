@@ -1,9 +1,10 @@
-module goxi-v2
+module github.com/linktomarkdown/goxi-v2
 
 go 1.23.0
 
 require (
 	github.com/go-resty/resty/v2 v2.14.0
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.6.0
 	github.com/minio/madmin-go/v3 v3.0.64
 	github.com/minio/minio-go/v7 v7.0.76
@@ -21,7 +22,6 @@ require (
 	github.com/go-ini/ini v1.67.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
-	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
