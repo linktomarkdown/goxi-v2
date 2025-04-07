@@ -2,6 +2,8 @@ package goxi_v2
 
 import (
 	"crypto/md5"
+	crand "crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"github.com/google/uuid"
@@ -15,6 +17,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -46,6 +49,44 @@ func NewLibLogic() *LibLogic {
 // GenerateOrderNo 生成订单号
 func (u *LibLogic) GenerateOrderNo() string {
 	return strings.ReplaceAll(uuid.New().String(), "-", "")
+}
+
+// 业务标识映射
+var businessCode = map[string]string{
+	"alipay": "ALI",
+	"wechat": "WX",
+	"union":  "UN",
+}
+
+// 订单序列号（每秒递增）
+var mutex sync.Mutex
+var seqMap = make(map[string]int)
+
+// GenerateOrderID 生成订单号（符合微信 32 位长度）
+func (u *LibLogic) GenerateOrderID(paymentType string) string {
+	now := time.Now()
+
+	// 1. 时间戳（14 位）
+	timestamp := now.Format("20060102150405") // 精确到秒
+
+	// 2. 业务标识（3 位）
+	bizCode, exists := businessCode[paymentType]
+	if !exists {
+		bizCode = "UNK" // 默认未知业务
+	}
+
+	// 3. 序列号（4 位）- 保证同秒内的唯一性
+	mutex.Lock()
+	key := now.Format("20060102150405") // 以秒为单位
+	seqMap[key]++
+	seq := seqMap[key] % 10000 // 限制 4 位（0000 ~ 9999）
+	mutex.Unlock()
+
+	// 4. 随机数（6 位）- 防止并发冲突
+	randomCode := fmt.Sprintf("%06d", rand.New(rand.NewSource(time.Now().UnixNano())).Intn(1000000))
+
+	// 组合订单号
+	return fmt.Sprintf("%s%s%04d%s", timestamp, bizCode, seq, randomCode)
 }
 
 // GenerateName 生成名称
@@ -189,13 +230,23 @@ func (u *LibLogic) CopyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer sourceFile.Close()
+	defer func(sourceFile *os.File) {
+		err := sourceFile.Close()
+		if err != nil {
+			logrus.Error("关闭文件失败")
+		}
+	}(sourceFile)
 
 	destFile, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer destFile.Close()
+	defer func(destFile *os.File) {
+		err := destFile.Close()
+		if err != nil {
+			logrus.Error("关闭文件失败")
+		}
+	}(destFile)
 
 	_, err = io.Copy(destFile, sourceFile)
 	return err
@@ -216,7 +267,10 @@ func (u *LibLogic) CopyDir(src string, dst string) error {
 		}
 	}
 
-	os.MkdirAll(dst, s.Mode())
+	err = os.MkdirAll(dst, s.Mode())
+	if err != nil {
+		return err
+	}
 
 	entries, err := os.ReadDir(src)
 	if err != nil {
@@ -241,4 +295,30 @@ func (u *LibLogic) CopyDir(src string, dst string) error {
 	}
 
 	return nil
+}
+
+// ConvertUidToUint64 转换uid为uint64
+func (u *LibLogic) ConvertUidToUint64(uid string) uint64 {
+	uidUint64, _ := strconv.ParseUint(uid, 10, 64)
+	return uidUint64
+}
+
+// ContainsRoles 判断数组中是否有包含关系
+func (u *LibLogic) ContainsRoles(needle string, haystack []string) bool {
+	for _, v := range haystack {
+		if strings.Contains(v, needle) {
+			return true
+		}
+	}
+	return false
+}
+
+// GenerateKey generates a random string of specified length.
+func (u *LibLogic) GenerateKey(length int) (string, error) {
+	bytes := make([]byte, length)
+	_, err := crand.Read(bytes)
+	if err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(bytes)[:length], nil
 }

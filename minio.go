@@ -18,7 +18,7 @@ type Minio struct {
 }
 
 func NewMinio(endpoint, accessKeyID, secretAccessKey string, useSSL bool) (*Minio, error) {
-	log.Printf("初始化连接Minio")
+	//log.Printf("初始化连接Minio")
 	ctx := context.Background()
 
 	// Initialize minio client object.
@@ -27,10 +27,10 @@ func NewMinio(endpoint, accessKeyID, secretAccessKey string, useSSL bool) (*Mini
 		Secure: useSSL,
 	})
 	if err != nil {
-		log.Printf("初始化连接Minio失败:%s", err.Error())
+		//log.Printf("初始化连接Minio失败:%s", err.Error())
 		return nil, err
 	}
-	log.Printf("初始化连接Minio成功")
+	//log.Printf("初始化连接Minio成功")
 	return &Minio{
 		Client: mc,
 		ctx:    ctx,

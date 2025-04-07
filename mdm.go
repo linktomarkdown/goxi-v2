@@ -13,21 +13,12 @@ type MDM struct {
 }
 
 func NewMDM(endpoint, accessKeyID, secretAccessKey string, useSSL bool) (*MDM, error) {
-	log.Printf("初始化连接Minio Admin" + endpoint + " " + accessKeyID + " " + secretAccessKey + " " + fmt.Sprintf("%t", useSSL))
 	ctx := context.Background()
 	mdm, err := madmin.New(endpoint, accessKeyID, secretAccessKey, useSSL)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	// Fetch service status.
-	st, err := mdm.ServerInfo(ctx)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-	fmt.Println(st)
-	log.Printf("初始化连接Minio Admin成功")
 	return &MDM{
 		AdminClient: mdm,
 		ctx:         ctx,
